@@ -20,6 +20,7 @@ pygithub = "^2.5.0"
 flake8 = "^7.1.1"
 pylint = "^3.3.1"
 ruff = "^0.8.1"
+pydevd-pycharm = ">=243.21565.199,<243.21566.0"
 
 [build-system]
 requires = ["poetry-core"]

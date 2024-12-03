@@ -5,8 +5,7 @@ Generates formatted Markdown for errors and writes it to the GitHub Actions step
 summary.
 """
 
-from os import environ
-from typing import List
+import os
 from chktex import Error
 
 HEADER_MARKDOWN = """## ChkTeX Action Summary
@@ -27,7 +26,7 @@ ERROR_MARKDOWN = """### File: {0}
 
 
 def build_markdown_step_summary(
-    errors: List[Error],
+    errors: list[Error],
     number_of_files: int,
     number_of_errors: int,
     number_of_warnings: int,
@@ -71,6 +70,6 @@ def write_step_summary(step_summary: str) -> None:
     """
 
     with open(
-        environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8"
+        os.environ.get("GITHUB_STEP_SUMMARY"), "a", encoding="utf-8"
     ) as github_step_summary:
         github_step_summary.write(step_summary)

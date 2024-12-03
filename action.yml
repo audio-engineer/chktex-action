@@ -3,8 +3,13 @@ author: Jeremy Kun
 description: Lint your LaTeX files with ChkTeX
 runs:
   using: docker
-  image: docker://ghcr.io/j2kun/chktex-action:latest
+  image: docker://ghcr.io/audio-engineer/chktex-action:latest
   entrypoint: /entrypoint.sh
+inputs:
+  lint-all:
+    description: Hello
+    required: false
+    default: 'false'
 branding:
   icon: edit
   color: yellow

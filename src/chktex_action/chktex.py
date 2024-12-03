@@ -5,8 +5,9 @@ Provides functionality for running ChkTeX and parsing its output.
 import re
 from subprocess import run
 from dataclasses import dataclass
-from typing import List, LiteralString
 from os import path, chdir
+
+from util import is_debugging_enabled, Log
 
 
 @dataclass
@@ -20,10 +21,10 @@ class Error:
     number: int
     line: int
     message: str
-    context: List[str]
+    context: list[str]
 
 
-def parse_chktex_output(stdout: str) -> List[Error]:
+def parse_chktex_output(stdout: str) -> list[Error]:
     """
     Parses the stdout output from ChkTeX into a list of `Error` objects.
 
@@ -78,9 +79,7 @@ def find_local_chktexrc(github_workspace_path: str) -> str | None:
     return None
 
 
-def run_chktex(
-    github_workspace_path: str, files: list[LiteralString | str | bytes]
-) -> List[Error]:
+def run_chktex(github_workspace_path: str, files: list[str]) -> list[Error]:
     """
     Runs ChkTeX on a list of `.tex` files in the specified workspace.
 
@@ -91,7 +90,7 @@ def run_chktex(
     local_chktexrc = find_local_chktexrc(github_workspace_path)
 
     if local_chktexrc:
-        print("::notice ::Using local .chktexrc file.")
+        Log.notice("Using local .chktexrc file.")
 
         def chktex_command(file):
             """Run ChkTeX with the local .chktexrc file."""
@@ -99,7 +98,7 @@ def run_chktex(
             return ["chktex", "-q", "--inputfiles=0", "-l", local_chktexrc, file]
 
     else:
-        print("::notice ::Using global chktexrc file.")
+        Log.notice("Using global chktexrc file.")
 
         def chktex_command(file):
             """Run ChkTeX with the global chktexrc file."""
@@ -111,6 +110,9 @@ def run_chktex(
     for file in files:
         directory = path.dirname(file)
         relative_file = path.basename(file)
+
+        if is_debugging_enabled():
+            Log.debug("Linting file: " + relative_file)
 
         completed_process = run(
             chktex_command(relative_file),

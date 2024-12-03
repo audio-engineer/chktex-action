@@ -1,5 +1,5 @@
 name: Build and Test ChkTeX Action Image
-on: pull_request
+on: push
 env:
   TEST_TAG: j2kun/chktex-action:test
 jobs:

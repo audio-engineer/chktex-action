@@ -7,6 +7,7 @@ services:
     environment:
       GITHUB_WORKSPACE: /usr/src/${COMPOSE_PROJECT_NAME}/
       GITHUB_STEP_SUMMARY: /usr/src/${COMPOSE_PROJECT_NAME}/github-step-summary.md
+      ACTIONS_RUNNER_DEBUG: true
     tty: true
     volumes:
       - ./:/usr/src/${COMPOSE_PROJECT_NAME}/
