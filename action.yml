@@ -12,7 +12,7 @@ inputs:
   lint-all:
     description: Force lint of all files in the repository.
     required: false
-    default: 'false'
+    default: false
 branding:
   icon: edit
   color: yellow

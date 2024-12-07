@@ -3,15 +3,15 @@ Handles pull requests.
 """
 
 import json
-import os
 from typing import TYPE_CHECKING, TypedDict
 
 from github.CheckRun import CheckRun
 from github.PullRequest import PullRequest
-from util import Log
+
+from chktex_action.logger import Log
 
 if TYPE_CHECKING:
-    from chktex import Error
+    from chktex_action.chktex import Error
 
 annotation_level_mapping = {
     "Error": "failure",
@@ -32,7 +32,7 @@ class Annotation(TypedDict):
     annotation_level: str
 
 
-def get_pull_request_number() -> int:
+def get_pull_request_number(github_event_path: str) -> int:
     """
     Retrieves the pull request number from the GitHub Actions event payload.
 
@@ -40,11 +40,8 @@ def get_pull_request_number() -> int:
         int: The pull request number if available, or None if not a pull request event.
     """
 
-    github_event_path: str = os.environ.get("GITHUB_EVENT_PATH", "")
-
     with open(github_event_path, "r", encoding="utf-8") as event_file:
         event_data = json.load(event_file)
-
         pull_request_number = event_data.get("pull_request", {}).get("number")
 
         return int(pull_request_number)
@@ -85,7 +82,6 @@ def process_pull_request(
     }
 
     Log.debug(str(output))
-
     check_run.edit(output=output)
 
     if errors:
