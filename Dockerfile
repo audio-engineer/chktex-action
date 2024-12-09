@@ -38,13 +38,16 @@ RUN set -eux; \
     python3 -m pip install --root-user-action ignore --no-cache-dir --upgrade \
     pip \
     poetry \
-    poetry-plugin-export \
     ; \
-    poetry install
+    poetry install --no-root
 
 FROM development AS production_builder
 
-RUN poetry export --without-hashes -o requirements.txt
+COPY src/ src/
+
+RUN set -eux; \
+    \
+    poetry build
 
 FROM python:alpine
 
@@ -60,7 +63,7 @@ WORKDIR /usr/src/chktex-action/
 
 COPY --from=chktex_builder /usr/local/bin/chktex /usr/local/bin/
 COPY --from=chktex_builder /usr/local/etc/chktexrc /usr/local/etc/
-COPY --from=production_builder /usr/src/chktex-action/requirements.txt ./
+COPY --from=production_builder /usr/src/chktex-action/dist/*.whl ./dist/
 
 RUN set -eux; \
     \
@@ -68,9 +71,8 @@ RUN set -eux; \
     gcompat \
     ; \
     python3 -m pip install --root-user-action ignore --no-cache-dir \
-    -r requirements.txt
+    dist/*.whl \
+    ; \
+    rm -rf dist/
 
-COPY src/ src/
-
-# The GitHub runner uses --workdir, so the absolute path has to be used
-CMD ["python3", "/usr/src/chktex-action/src/chktex_action/main.py"]
+ENTRYPOINT ["chktex-action"]

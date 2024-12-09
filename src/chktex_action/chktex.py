@@ -5,9 +5,10 @@ Provides functionality for running ChkTeX and parsing its output.
 import os
 import re
 import subprocess
+from collections import Counter
 from dataclasses import dataclass
 
-from util import Log
+from chktex_action.logger import Log
 
 
 @dataclass
@@ -24,6 +25,30 @@ class Error:
     context: list[str]
 
 
+@dataclass
+class Analysis:
+    """
+    Represents an analysis result.
+    """
+
+    number_of_files: int
+    number_of_errors: int
+    number_of_warnings: int
+
+    def __init__(self, errors: list[Error]) -> None:
+        self.number_of_files = len(set(error.path for error in errors))
+
+        level_counts = Counter(error.level for error in errors)
+        self.number_of_errors = level_counts.get("Error", 0)
+        self.number_of_warnings = level_counts.get("Warning", 0)
+
+    def __str__(self) -> str:
+        return (
+            f"Total files: {self.number_of_files}, total errors: "
+            f"{self.number_of_errors}, total warnings: {self.number_of_warnings}"
+        )
+
+
 def parse_chktex_output(stdout: str) -> list[Error]:
     """
     Parses the stdout output from ChkTeX into a list of `Error` objects.
@@ -34,11 +59,8 @@ def parse_chktex_output(stdout: str) -> list[Error]:
     pattern = re.compile(
         r"^(Error|Warning)\s+(\d+)\s+in\s+(.*?)\s+line\s+(\d+):\s+(.+)$"
     )
-
     lines = [line for line in stdout.splitlines() if line.strip()]
-
     errors = []
-
     error_index = -1
 
     for line in lines:
@@ -72,7 +94,6 @@ def find_local_chktexrc(github_workspace_path: str) -> str | None:
     """
 
     os.chdir(github_workspace_path)
-
     local_chktexrc = os.path.abspath(".chktexrc")
 
     if os.path.exists(local_chktexrc):
@@ -81,7 +102,7 @@ def find_local_chktexrc(github_workspace_path: str) -> str | None:
     return None
 
 
-def run_chktex(github_workspace_path: str, files: list[str]) -> list[Error]:
+def run_chktex(github_workspace_path: str, paths: list[str]) -> list[Error]:
     """
     Runs ChkTeX on a list of `.tex` files in the specified workspace.
 
@@ -94,26 +115,25 @@ def run_chktex(github_workspace_path: str, files: list[str]) -> list[Error]:
     if local_chktexrc:
         Log.notice("Using local .chktexrc file.")
 
-        def chktex_command(file: str) -> list[str]:
+        def chktex_command(path: str) -> list[str]:
             """Run ChkTeX with the local .chktexrc file."""
 
-            return ["chktex", "-q", "--inputfiles=0", "-l", local_chktexrc, file]
+            return ["chktex", "-q", "--inputfiles=0", "-l", local_chktexrc, path]
 
     else:
         Log.notice("Using global chktexrc file.")
 
-        def chktex_command(file: str) -> list[str]:
+        def chktex_command(path: str) -> list[str]:
             """Run ChkTeX with the global chktexrc file."""
 
-            return ["chktex", "-q", "--inputfiles=0", file]
+            return ["chktex", "-q", "--inputfiles=0", path]
 
     total_errors = []
 
-    for file in files:
-        Log.debug("Linting file: " + file)
-
+    for path in paths:
+        Log.debug("Linting File: " + path)
         completed_process = subprocess.run(
-            chktex_command(file),
+            chktex_command(path),
             cwd=github_workspace_path,
             capture_output=True,
             text=True,
@@ -123,9 +143,7 @@ def run_chktex(github_workspace_path: str, files: list[str]) -> list[Error]:
         stdout = completed_process.stdout
         # Mark as unused, might be used later
         _stderr = completed_process.stderr  # noqa: F841
-
         errors = parse_chktex_output(stdout)
-
         total_errors.extend(errors)
 
     return total_errors
