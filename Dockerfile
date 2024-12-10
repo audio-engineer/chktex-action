@@ -22,11 +22,11 @@ RUN set -eux; \
     sed -i '/^install:/ s/ ChkTeX.dvi//' Makefile; \
     make install
 
-FROM python:alpine AS development
+FROM python:3.13-alpine AS development
 
 WORKDIR /usr/src/chktex-action/
 
-COPY poetry.lock poetry.toml pyproject.toml README.md ./
+COPY src/ poetry.lock poetry.toml pyproject.toml README.md ./
 COPY --from=chktex_builder /usr/local/bin/chktex /usr/local/bin/
 COPY --from=chktex_builder /usr/local/etc/chktexrc /usr/local/etc/
 
@@ -38,15 +38,16 @@ RUN set -eux; \
     python3 -m pip install --root-user-action ignore --no-cache-dir --upgrade \
     pip \
     poetry \
-    poetry-plugin-export \
     ; \
     poetry install
 
 FROM development AS production_builder
 
-RUN poetry export --without-hashes -o requirements.txt
+RUN set -eux; \
+    \
+    poetry build
 
-FROM python:alpine
+FROM python:3.13-alpine
 
 LABEL com.github.actions.name="ChkTeX Action"
 LABEL com.github.actions.description="Lint your LaTeX files with ChkTeX"
@@ -60,7 +61,7 @@ WORKDIR /usr/src/chktex-action/
 
 COPY --from=chktex_builder /usr/local/bin/chktex /usr/local/bin/
 COPY --from=chktex_builder /usr/local/etc/chktexrc /usr/local/etc/
-COPY --from=production_builder /usr/src/chktex-action/requirements.txt ./
+COPY --from=production_builder /usr/src/chktex-action/dist/*.whl ./dist/
 
 RUN set -eux; \
     \
@@ -68,9 +69,8 @@ RUN set -eux; \
     gcompat \
     ; \
     python3 -m pip install --root-user-action ignore --no-cache-dir \
-    -r requirements.txt
+    dist/*.whl \
+    ; \
+    rm -rf dist/
 
-COPY src/ src/
-
-# The GitHub runner uses --workdir, so the absolute path has to be used
-CMD ["python3", "/usr/src/chktex-action/src/chktex_action/main.py"]
+ENTRYPOINT ["chktex-action"]

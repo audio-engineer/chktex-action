@@ -3,15 +3,15 @@ Handles pull requests.
 """
 
 import json
-import os
 from typing import TYPE_CHECKING, TypedDict
 
 from github.CheckRun import CheckRun
 from github.PullRequest import PullRequest
-from util import Log
+
+from chktex_action.logger import Log
 
 if TYPE_CHECKING:
-    from chktex import Error
+    from chktex_action.chktex import Error
 
 annotation_level_mapping = {
     "Error": "failure",
@@ -32,7 +32,7 @@ class Annotation(TypedDict):
     annotation_level: str
 
 
-def get_pull_request_number() -> int:
+def get_pull_request_number(github_event_path: str) -> int:
     """
     Retrieves the pull request number from the GitHub Actions event payload.
 
@@ -40,14 +40,22 @@ def get_pull_request_number() -> int:
         int: The pull request number if available, or None if not a pull request event.
     """
 
-    github_event_path: str = os.environ.get("GITHUB_EVENT_PATH", "")
-
     with open(github_event_path, "r", encoding="utf-8") as event_file:
         event_data = json.load(event_file)
-
         pull_request_number = event_data.get("pull_request", {}).get("number")
 
         return int(pull_request_number)
+
+
+def build_message(error: "Error") -> str:
+    """
+    Builds the annotation message from an error.
+    """
+
+    if error.context:
+        return f"{error.message}\n\n{'\n'.join(error.context)}"
+
+    return error.message
 
 
 def create_annotations(errors: list["Error"]) -> list[Annotation]:
@@ -60,12 +68,26 @@ def create_annotations(errors: list["Error"]) -> list[Annotation]:
             "path": error.path,
             "start_line": error.line,
             "end_line": error.line,
-            "message": f"{error.message}\n\n{'\n'.join(error.context)}",
+            "message": build_message(error),
             "title": "ChkTeX Action",
             "annotation_level": annotation_level_mapping.get(error.level, "warning"),
         }
         for error in errors
     ]
+
+
+def build_output(
+    errors: list["Error"], analysis_string: str
+) -> dict[str, str | list[Annotation]]:
+    """
+    Build the output dictionary for the check run.
+    """
+
+    return {
+        "title": "ChkTeX Action",
+        "summary": analysis_string,
+        "annotations": create_annotations(errors),
+    }
 
 
 def process_pull_request(
@@ -78,14 +100,8 @@ def process_pull_request(
     Process the pull request by creating reviews and updating check runs with results.
     """
 
-    output = {
-        "title": "ChkTeX Action",
-        "summary": analysis_string,
-        "annotations": create_annotations(errors),
-    }
-
-    Log.debug(str(output))
-
+    output = build_output(errors, analysis_string)
+    Log.debug("Check Run Output: " + str(output))
     check_run.edit(output=output)
 
     if errors:
