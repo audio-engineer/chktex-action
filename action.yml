@@ -3,7 +3,7 @@ author: Jeremy Kun
 description: Lint your LaTeX files with ChkTeX
 runs:
   using: docker
-  image: docker://ghcr.io/j2kun/chktex-action:latest
+  image: docker://ghcr.io/audio-engineer/chktex-action:2.2.0
 inputs:
   github-token:
     description: GitHub token
@@ -12,7 +12,7 @@ inputs:
   lint-all:
     description: Force lint of all files in the repository.
     required: false
-    default: 'false'
+    default: false
 branding:
   icon: edit
   color: yellow

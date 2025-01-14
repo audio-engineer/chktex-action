@@ -1,5 +1,5 @@
 name: Formatting and Linting
-on: pull_request
+on: push
 jobs:
   formatting-and-linting:
     name: Formatting and Linting
@@ -10,7 +10,7 @@ jobs:
       - name: Set Up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.13
+          python-version-file: pyproject.toml
       - name: Install Packages
         run: |
           python3 -m pip install --upgrade pip poetry
@@ -24,6 +24,8 @@ jobs:
       - name: Run Flake8
         uses: py-actions/flake8@v2
       - name: Run Pylint
-        run: pylint src/chktex_action/
+        run: pylint .
       - name: Run Ruff
         uses: astral-sh/ruff-action@v1
+      - name: Run pytest
+        run: pytest --cov=chktex_action

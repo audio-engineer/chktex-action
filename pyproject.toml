@@ -2,18 +2,16 @@
 name = "chktex-action"
 requires-python = ">=3.13"
 
-[tool.black]
-line-length = 88
-
-[tool.isort]
-profile = "black"
-
 [tool.poetry]
 name = "chktex-action"
-version = "2.1.0"
+version = "2.2.0"
 description = "Lint your LaTeX files with ChkTeX"
 authors = ["Jeremy Kun <j2kun@users.noreply.github.com>", "Martin Kedmenec"]
 readme = "README.md"
+packages = [{ include = "chktex_action", from = "src" }]
+
+[tool.poetry.scripts]
+chktex-action = "chktex_action.action:run"
 
 [tool.poetry.dependencies]
 python = "^3.13"
@@ -26,7 +24,33 @@ ruff = "^0.8.1"
 pydevd-pycharm = ">=243.21565.199,<243.21566.0"
 isort = "^5.13.2"
 mypy = "^1.13.0"
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
+pytest-env = "^1.1.5"
+pytest-mock = "^3.14.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+files = "**/*.py"
+strict = true
+
+[tool.pytest_env]
+GITHUB_WORKSPACE = "/home/github/"
+INPUT_GITHUB-TOKEN = "123456789"
+GITHUB_EVENT_PATH = "/home/event/"
+GITHUB_REPOSITORY = "j2kun/chktex-action"
+GITHUB_EVENT_NAME = "push"
+INPUT_LINT-ALL = "true"
+GITHUB_STEP_SUMMARY = "/home/step-summary.md"
+GITHUB_REF_NAME = ""
+GITHUB_HEAD_REF = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+RUNNER_DEBUG = "1"

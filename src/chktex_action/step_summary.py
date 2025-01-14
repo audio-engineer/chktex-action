@@ -5,11 +5,10 @@ Generates formatted Markdown for errors and writes it to the GitHub Actions step
 summary.
 """
 
-import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from chktex import Error
+    from chktex_action.chktex import Error
 
 ERROR_MARKDOWN = """### Path: {0}
 
@@ -51,15 +50,13 @@ def build_markdown_step_summary(errors: list["Error"], analysis_string: str) -> 
             )
         )
 
-    return f"{analysis_string}\n" + "\n".join(formatted_errors)
+    return f"{analysis_string}\n\n" + "\n".join(formatted_errors)
 
 
-def write_step_summary(step_summary: str) -> None:
+def write_step_summary(step_summary_path: str, step_summary: str) -> None:
     """
     Writes the provided Markdown summary to the `GITHUB_STEP_SUMMARY` file.
     """
 
-    step_summary_file: str = os.environ.get("GITHUB_STEP_SUMMARY", "")
-
-    with open(step_summary_file, "a", encoding="utf-8") as github_step_summary:
-        github_step_summary.write("## ChkTeX Action Summary\n" + step_summary)
+    with open(step_summary_path, "a", encoding="utf-8") as github_step_summary:
+        github_step_summary.write("## ChkTeX Action Summary\n\n" + step_summary)

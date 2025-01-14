@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - dev
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -31,16 +32,21 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Set Date As Version
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: pyproject.toml
+      - name: Set Version
         run: |
-          echo "VERSION=$(date +%Y%m%d)" >> $GITHUB_ENV
+          pip install .
+          python3 -c 'import importlib.metadata; print("VERSION=" + importlib.metadata.version("chktex-action"))' >> $GITHUB_ENV
       - name: Build and Push Image
         id: push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest, ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}, ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta.outputs.labels }}
       - name: Generate Artifact Attestation
         uses: actions/attest-build-provenance@v1
